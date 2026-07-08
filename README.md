@@ -22,9 +22,13 @@ Build Journal, and a CI eval gate. By August 7 this repo *is* your portfolio.
    expect at most ~$10 of usage for the term). Then click **Create
    codespace**. (Forgot a key? No problem — the Gateway terminal will ask
    you for one on first start.)
-3. Wait for setup to finish (watch the numbered steps). The OpenClaw gateway
-   auto-starts in the background and two terminals open: **Gateway** (live
-   log) and **TUI** (chat with your agent). Full details on how this works:
+3. When VS Code asks **"Do you want to allow automatic tasks…?"** (naming
+   OpenClaw: Gateway and OpenClaw: TUI), click **Allow** — don't let it
+   time out. That's what opens your two work terminals, and one click
+   covers all future opens. Then wait for setup to finish (watch the
+   numbered steps). The OpenClaw gateway auto-starts in the background and
+   two terminals open: **Gateway** (live log) and **TUI** (chat with your
+   agent). Full details on how this works:
    [openclaw-codespace-starter](https://github.com/jhassell/openclaw-codespace-starter)
    — this repo includes the same machinery.
    **No terminals appeared?** That's a VS Code security gate, not a broken
