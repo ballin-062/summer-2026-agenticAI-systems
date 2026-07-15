@@ -12,6 +12,10 @@ set -uo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_env.sh" 2>/dev/null || true
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Self-heal the student shell environment (PYTHONPATH, prompt, banner) on
+# every container start — see scripts/env-setup.sh. Never blocks startup.
+bash "${REPO_DIR}/scripts/env-setup.sh" >/dev/null 2>&1 || true
+
 mkdir -p "${HOME}/.openclaw"
 LOG="${HOME}/.openclaw/gateway.log"
 
@@ -22,16 +26,41 @@ if curl -fsS -m 2 -o /dev/null "http://127.0.0.1:18789/healthz" 2>/dev/null \
 fi
 
 # Start the gateway in the background via the existing start script (it owns
-# the pre-flight, install-if-missing, and config logic). Detach fully so the
-# container start isn't blocked and the process survives this shell.
+
+# the pre-flight, install-if-missing, and config logic). Detach into a NEW
+# SESSION (setsid) so it survives the lifecycle hook's process group being
+# reaped when postStartCommand exits — observed on Codespaces 2026-07-08:
+# a plain nohup+& child died at spawn with zero output.
 : > "${LOG}"
 {
   echo "[gateway-daemon] $(date '+%Y-%m-%d %H:%M:%S %Z') starting gateway in background…"
   echo "[gateway-daemon] watch live:  tail -f ~/.openclaw/gateway.log   (the"
   echo "[gateway-daemon] 'OpenClaw: Gateway' and 'OpenClaw: TUI' terminals also stream this)"
 } >> "${LOG}"
-OPENCLAW_GATEWAY_FOREGROUND=1 nohup bash "${REPO_DIR}/scripts/start-gateway.sh" >> "${LOG}" 2>&1 < /dev/null &
-echo $! > "${HOME}/.openclaw/.gateway.pid"
-disown 2>/dev/null || true
+
+if command -v setsid >/dev/null 2>&1; then
+  OPENCLAW_GATEWAY_FOREGROUND=1 setsid --fork bash "${REPO_DIR}/scripts/start-gateway.sh" >> "${LOG}" 2>&1 < /dev/null || true
+  # setsid --fork detaches immediately; find the child for the pid file (best effort).
+  sleep 1
+  pgrep -f "scripts/start-gateway.sh" 2>/dev/null | head -n1 > "${HOME}/.openclaw/.gateway.pid" || true
+else
+  OPENCLAW_GATEWAY_FOREGROUND=1 nohup bash "${REPO_DIR}/scripts/start-gateway.sh" >> "${LOG}" 2>&1 < /dev/null &
+  echo $! > "${HOME}/.openclaw/.gateway.pid"
+  disown 2>/dev/null || true
+fi
+
+# Watchdog note: give it a moment, then record whether it actually survived —
+# turns a silent death into a diagnosable log line.
+sleep 2
+if pgrep -f "scripts/start-gateway.sh" >/dev/null 2>&1 \
+   || curl -fsS -m 2 -o /dev/null "http://127.0.0.1:18789/healthz" 2>/dev/null; then
+  echo "[gateway-daemon] background launcher is alive." >> "${LOG}"
+elif [[ "$(cat "${HOME}/.openclaw/.preflight" 2>/dev/null)" == "fail" ]]; then
+  echo "[gateway-daemon] gateway not started: key pre-flight failed (details above). The 'OpenClaw: Gateway' terminal will prompt you for a key — or run 'bash scripts/set-key.sh'." >> "${LOG}"
+elif [[ "$(cat "${HOME}/.openclaw/.preflight" 2>/dev/null)" == "ok" ]]; then
+  echo "[gateway-daemon] ⚠️ key was fine but the gateway process exited — read the log above, then run 'bash scripts/start-gateway.sh' in a terminal." >> "${LOG}"
+else
+  echo "[gateway-daemon] ⚠️ background launcher died immediately — run 'bash scripts/start-gateway.sh' in a terminal (or Tasks: Run Task → OpenClaw: Gateway)." >> "${LOG}"
+fi
 
 exit 0

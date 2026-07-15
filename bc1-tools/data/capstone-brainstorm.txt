@@ -2,3 +2,21 @@ Capstone brainstorm. Candidate use cases: (1) helpdesk ticket triage with
 human approval gates, (2) course-catalog Q&A with citations, (3) a lab-report
 formatter that never invents numbers. For the demo we want a live run, a
 visible trace, and a rollback story. Demo should fit in eight minutes.
+
+Torbett Capstone Idea:
+I want to take my capstone product and roll it into a Practicum/Thesis later in Fall '26.
+As a former pentester looking to get back into industry, there is a lot of BUZZ around leveraging AI/Agents 
+in pentesting activities. There is some -- albeit sparce -- academic research into this niche. Most activity
+comes from industry through open source repos on Github or paid products.
+Additionally, these industry products and academic research almost exclusively focus on Web Application 
+security/pentesting/bug bounty hunting. When they do discuss networks they leave out Active Directory 
+environments, which every Fortune 500 company uses: AD is the backbone and work horse of corporate networks.
+Identifying this GAP in research and industry tools is something I want to exploit for my research and 
+class activity. 
+My aim is to leverage existing work on Agent Pentesting capability and develop a solution for AD 
+recon/enumeration. The Recon/Enum phase of pentesting is consistenly viewed as a constant loop of scanning,
+parsing, and taking further action against the results. This phase is ripe for AI Agent augmentation.
+Tooling exists for conducting these activities, specifically a tool called "BloodHound".
+Further, testing environments exist for AD Pentest training, namely Game of Active Directory (GOAD).
+These lay the groundwork for my Graduate level Capstone project I want to develop into a larger project 
+to fulfill my Graduate degree.
