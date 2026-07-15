@@ -20,3 +20,6 @@ Tooling exists for conducting these activities, specifically a tool called "Bloo
 Further, testing environments exist for AD Pentest training, namely Game of Active Directory (GOAD).
 These lay the groundwork for my Graduate level Capstone project I want to develop into a larger project 
 to fulfill my Graduate degree.
+
+
+Key_stopword

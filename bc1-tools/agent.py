@@ -25,15 +25,13 @@ DATA = pathlib.Path(__file__).resolve().parent / "data"
 MAX_STEPS = 12
 
 TOOLS_SPEC = """Available tools (reply with ONE JSON object per turn):
-{"tool": "list_notes"}                          -> filenames in the notes folder
-{"tool": "search_notes_verbose", "query": "x"}  -> FULL TEXT of every note containing x (wasteful — improve me!)
-{"tool": "read_note", "name": "<file>"}         -> full text of one note
-{"tool": "finish", "answer": "<final answer>"}  -> end the task
+{"tool": "list_notes"}                                        -> filenames in the notes folder
+{"tool": "search_notes_verbose", "query": "x"}               -> FULL TEXT of every note containing x (wasteful — use search_notes instead)
+{"tool": "search_notes", "query": "x"}                       -> token-efficient: returns [{"file": "...", "line": "..."}] pairs for lines matching x
+{"tool": "read_note", "name": "<file>"}                      -> full text of one note
+{"tool": "word_count", "name": "<file>"}                     -> word count of one note (just a number — token-efficient)
+{"tool": "finish", "answer": "<final answer>"}               -> end the task
 """
-# TODO(you): add 2-3 custom tools. Ideas: word_count, a calculator,
-# a token-efficient search that returns (filename, matching line) pairs,
-# a note-writer. Update TOOLS_SPEC *and* run_tool together — the spec is
-# the model's only knowledge of your interface.
 
 
 def run_tool(act: dict) -> str:
@@ -45,9 +43,23 @@ def run_tool(act: dict) -> str:
         out = {p.name: p.read_text() for p in DATA.glob("*.txt")
                if q in p.read_text().lower()}
         return json.dumps(out) if out else "no matches"
+    if t == "search_notes":
+        q = act.get("query", "").lower()
+        hits = []
+        for p in sorted(DATA.glob("*.txt")):
+            for line in p.read_text().splitlines():
+                if q in line.lower():
+                    hits.append({"file": p.name, "line": line.strip()})
+        return json.dumps(hits) if hits else "no matches"
     if t == "read_note":
         p = DATA / pathlib.Path(act.get("name", "")).name
         return p.read_text() if p.exists() else "ERROR: no such note"
+    if t == "word_count":
+        p = DATA / pathlib.Path(act.get("name", "")).name
+        if not p.exists():
+            return "ERROR: no such note"
+        count = len(p.read_text().split())
+        return json.dumps({"file": p.name, "words": count})
     return "ERROR: unknown tool " + repr(t)
 
 
